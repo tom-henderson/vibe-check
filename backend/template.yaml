@@ -70,6 +70,11 @@ Resources:
       CodeUri: src/
       Handler: app.handler
       Role: !GetAtt MoodFunctionRole.Arn
+      # Cap concurrent invocations. The URL is public and unauthenticated, so
+      # this bounds both cost and the DynamoDB write rate under a flood (and
+      # contains blast radius). Trade-off: beyond this, callers are throttled and
+      # hit the app's "that didn't go through" path. Raise if real traffic needs it.
+      ReservedConcurrentExecutions: 10
       Environment:
         Variables:
           TABLE_NAME: !Ref MoodTable

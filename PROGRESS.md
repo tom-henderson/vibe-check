@@ -50,6 +50,13 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 - [ ] After first backend deploy: set BACKEND_URL repo variable
 - [ ] Replace placeholder mood images
 
+## Security
+- Review in `docs/SECURITY-REVIEW.md`. Repo-side hardening applied: reserved
+  concurrency cap (10), Actions pinned to SHAs + Dependabot, per-job workflow
+  permissions, deploys guarded to main, CSP meta, Secure cookie.
+- Owner to-dos: branch protection on main (primary control), deploy-role
+  least-privilege review, AWS Budgets alert, Pages environment restricted to main.
+
 ## Deploy log
 - **2026-08-06, run #1** (merge of PR #1, ran the pre-fix workflow):
   - `config` ✅ backend gated on (AWS_ACCOUNT_ID present).

@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Defense-in-depth CSP (GitHub Pages can't set headers). script-src is strict
+     'self'; style-src allows 'unsafe-inline' because the app sets inline style
+     attributes (mood colours, bar widths). connect-src allows https so the fetch
+     to the Lambda Function URL works; tighten to the exact origin if injecting
+     it at build time. frame-ancestors / X-Frame-Options can't be set on Pages
+     (header-only), so anti-clickjacking isn't enforceable here. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:">
 <meta name="description" content="Pick today's mood. One vote a day, wipes at midnight.">
 <title>current mood</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">

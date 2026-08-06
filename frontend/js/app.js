@@ -23,9 +23,12 @@ function readVoteCookie() {
 
 function writeVoteCookie(mood, dayKey) {
   const expires = nextNzMidnight().toUTCString();
+  // Secure over HTTPS (production on Pages); omitted on http://localhost so the
+  // returning-visitor path is still testable locally.
+  const secure = location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `${COOKIE}=${encodeURIComponent(
     `${mood}|${dayKey}`
-  )}; expires=${expires}; path=/; SameSite=Lax`;
+  )}; expires=${expires}; path=/; SameSite=Lax${secure}`;
 }
 
 // ------------------------------------------------------------------- screens

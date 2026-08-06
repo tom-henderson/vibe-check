@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current (Dependabot bumps the pin + tag comment).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Backend Lambda dependencies (aws-sdk).
+  - package-ecosystem: npm
+    directory: /backend/src
+    schedule:
+      interval: weekly
+
+  # Backend test/dev workspace.
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly

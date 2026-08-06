@@ -114,14 +114,21 @@ a commit on `main` effectively controls that blast radius.** Controls:
 
 - **Protect `main`.** Require PR review, disallow direct pushes, restrict who can
   merge. Since *merge = deploy to AWS*, this is the most important governance
-  control and it's free.
-- **Attach a permissions boundary** to roles the stack creates. If the owner
-  provides a boundary policy ARN, the template can set `PermissionsBoundary` on
-  `MoodFunctionRole` so a created role can never exceed the boundary — this caps
-  the escalation even if a bad template slips through. (Repo-side change, ready
-  when a boundary ARN exists.)
-- **Tighten the deploy role** where practical: prefer attaching AWS-managed/known
-  policies over arbitrary `PutRolePolicy`, and scope resources to `current-mood*`.
+  control and it's free. This is the primary defence.
+- **Tighten the deploy role itself** (account-side) — this is where the blast
+  radius actually lives: prefer attaching known AWS-managed policies over broad
+  `PutRolePolicy`, and scope resources to `current-mood*` / a tight role path.
+- **A permissions boundary is not effective if set in our template.** A boundary
+  only prevents escalation when the *deploy role's own policy* requires it — an
+  `iam:PermissionsBoundary` condition on `CreateRole`/`PutRolePolicy` so the
+  deploy role simply cannot create a role without the boundary. Setting
+  `PermissionsBoundary` in the CloudFormation template is worthless against a
+  compromised `main`, because the attacker controls the template and would just
+  omit it. Even the account-side condition has a gap: `PassRole` can only be
+  constrained by resource ARN and `PassedToService`, not by the passed role's
+  permissions — so any *pre-existing* privileged role under the passable path
+  (`service-role/*`) could still be attached to a function. Keeping that path
+  free of privileged roles is part of the control.
 
 Runtime role — **good.** `MoodFunctionRole` grants only `dynamodb:GetItem` +
 `UpdateItem` on the one table, plus managed logging. No wildcards. This is correct
@@ -174,17 +181,21 @@ maintainer-controlled.
 
 ## Prioritized remediation checklist
 
-**Repo-side (can be done here):**
-- [ ] A1 — add `ReservedConcurrentExecutions` to the function (owner picks the cap).
-- [ ] B1 — pin all Actions to commit SHAs; enable Dependabot for actions + npm.
-- [ ] B2 — move `id-token`/`pages` to per-job `permissions`.
-- [ ] B3 — guard the `frontend` job to `main`.
-- [ ] C1 — set `PermissionsBoundary` on `MoodFunctionRole` (needs a boundary ARN).
-- [ ] D1 — add a `<meta>` CSP; optionally self-host fonts.
-- [ ] D2 — add `Secure` to the vote cookie.
+**Repo-side (applied 2026-08-06):**
+- [x] A1 — `ReservedConcurrentExecutions: 10` on the function (adjustable).
+- [x] B1 — all Actions pinned to commit SHAs; Dependabot added (actions + npm).
+- [x] B2 — `id-token`/`pages` moved to per-job `permissions`; default is `contents: read`.
+- [x] B3 — `frontend` (and `backend`) jobs guarded to `refs/heads/main`.
+- [x] D1 — `<meta>` CSP added (strict `script-src 'self'`). Self-hosting fonts still optional.
+- [x] D2 — `Secure` added to the vote cookie (over HTTPS).
 
 **Account / GitHub settings (owner):**
-- [ ] C1 — branch protection on `main` (required review, no direct push).
+- [ ] C1 — **branch protection on `main`** (required review, no direct push) — the
+      primary control against a compromised-`main` deploy. Highest priority.
+- [ ] C1 — deploy-role least-privilege review; if delegating IAM, enforce a
+      permissions boundary via an `iam:PermissionsBoundary` condition on the
+      *deploy role* (not the template) and keep `service-role/*` free of
+      privileged roles.
 - [ ] A1 — AWS Budgets alert; consider CloudFront (GET cache) / WAF if abused.
 - [ ] B3 — `github-pages` environment protection rule limited to `main`.
-- [ ] Deploy role — permissions boundary / tighter scoping; least-privilege review.
+- [ ] D1 — (optional) self-host the two fonts to drop the third-party request.
