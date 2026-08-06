@@ -59,3 +59,14 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
     Fix in **PR #2** (assume `AWS_SAM_DEPLOY_ROLE_NAME`, upload to
     `AWS_SAM_DEPLOY_BUCKET_NAME`). Merge #2 → re-run should get past auth.
     Watch for the next likely blocker: IAM permission scope on the deploy role.
+- **2026-08-06, run #2** (merge of PR #2, corrected workflow):
+  - `config` ✅, `frontend` ✅ (Pages, mock mode).
+  - `backend` ❌ still at OIDC step — role **name resolved** but trust policy
+    rejected the subject. Tom fixed the trust policy. (GitHub Actions outage
+    then paused further runs.)
+- **Pre-deploy policy audit** (against the granted deploy-role policy):
+  - Gap found: **no DynamoDB permissions** → CFN `CreateTable` would be denied.
+    Minimal DynamoDB policy handed to Tom (Terraform) to add.
+  - Gap found: SAM's auto role (path `/`) denied by the `role/service-role/*`
+    IAM scope → **template now pins the exec role to `/service-role/`** (PR #3),
+    no IAM change needed.

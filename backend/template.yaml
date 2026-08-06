@@ -34,23 +34,45 @@ Resources:
           KeyType: HASH
       # No TTL: past days are retained as history (never surfaced).
 
+  # Explicit execution role under /service-role/ (rather than SAM's auto-
+  # generated role at path /). The deploy role's IAM permissions and PassRole
+  # condition are scoped to arn:aws:iam::*:role/service-role/*, so keeping the
+  # function's role on that path lets the deploy create + pass it without any
+  # broader IAM grant. Least privilege at runtime: logs (managed) + read/
+  # increment on the one table.
+  MoodFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /service-role/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: mood-table-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt MoodTable.Arn
+
   MoodFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/
       Handler: app.handler
+      Role: !GetAtt MoodFunctionRole.Arn
       Environment:
         Variables:
           TABLE_NAME: !Ref MoodTable
-      # Least privilege: only read + increment on this one table.
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - dynamodb:GetItem
-                - dynamodb:UpdateItem
-              Resource: !GetAtt MoodTable.Arn
       FunctionUrlConfig:
         AuthType: NONE
         Cors:

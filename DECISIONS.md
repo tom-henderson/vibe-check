@@ -7,6 +7,16 @@ Using two version-controlled Markdown files instead of an external tracker:
 `PROGRESS.md` (checklist/status) and `DECISIONS.md` (this file). Self-contained,
 reviewable in the diff, no extra tooling — best fit for "minimal interaction".
 
+## 2026-08-06 — Lambda execution role pinned to /service-role/
+The deploy role's IAM permissions and its `iam:PassRole` condition are scoped to
+`arn:aws:iam::*:role/service-role/*`. SAM's auto-generated function role is
+created at path `/`, which that scope would deny at `iam:CreateRole`. So the
+execution role is now defined explicitly in `template.yaml` with
+`Path: /service-role/` (managed `AWSLambdaBasicExecutionRole` for logs + an
+inline read/increment policy on the table). This fits the existing grant with
+no broader IAM permission. The only permission the deploy role was actually
+missing is DynamoDB table management (added separately by Tom).
+
 ## 2026-08-06 — Repo layout
 - `frontend/` — static site published to GitHub Pages.
 - `backend/`  — AWS SAM app (`template.yaml` + `src/`).
