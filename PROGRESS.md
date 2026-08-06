@@ -42,8 +42,20 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 - [ ] Live vote/reload/lock, inspect DynamoDB, day rollover, a11y checks
 
 ## Waiting on Tom (see README "Handoff points")
-- [ ] Provision AWS account + OIDC for deploy
-- [ ] Add AWS account ID to Actions secrets
-- [ ] Create the IAM deploy role I assume
+- [x] Provision AWS account + OIDC for deploy
+- [x] Add AWS account ID to Actions secrets
+- [x] Create the IAM deploy role I assume (name in AWS_SAM_DEPLOY_ROLE_NAME)
+- [x] Enable GitHub Pages (source: GitHub Actions)
+- [ ] Merge PR #2 (CI fix so backend assumes the right role)
+- [ ] After first backend deploy: set BACKEND_URL repo variable
 - [ ] Replace placeholder mood images
-- [ ] Enable GitHub Pages (source: GitHub Actions) — confirm
+
+## Deploy log
+- **2026-08-06, run #1** (merge of PR #1, ran the pre-fix workflow):
+  - `config` ✅ backend gated on (AWS_ACCOUNT_ID present).
+  - `frontend` ✅ published to Pages in mock mode.
+  - `backend` ❌ `sts:AssumeRoleWithWebIdentity` not authorized — the merged
+    workflow used the old hardcoded role name `current-mood-github-deploy`.
+    Fix in **PR #2** (assume `AWS_SAM_DEPLOY_ROLE_NAME`, upload to
+    `AWS_SAM_DEPLOY_BUCKET_NAME`). Merge #2 → re-run should get past auth.
+    Watch for the next likely blocker: IAM permission scope on the deploy role.
