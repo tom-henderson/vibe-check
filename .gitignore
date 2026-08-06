@@ -1,0 +1,12 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# AWS SAM
+backend/.aws-sam/
+.aws-sam/
+samconfig.local.toml
+
+# OS / editor
+.DS_Store
+*.swp
