@@ -32,10 +32,11 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 - [x] Real fetch calls implemented behind the api seam (build-time injected URL)
 - [x] Cookie (`mood|dayKey`, expiry at next NZ midnight) + already-voted path
 
-## Stage 5 — CI/CD via GitHub Actions
-- [ ] Workflow: OIDC auth to AWS, `sam build && sam deploy`
-- [ ] Publish static site to GitHub Pages, injecting Function URL
-- [!] Requires: AWS account, OIDC role, repo secrets/vars (Tom)
+## Stage 5 — CI/CD via GitHub Actions  ✅ workflow written (needs Tom's AWS + Pages setup to run green)
+- [x] Workflow: OIDC auth to AWS, `sam build && sam deploy` (gated on AWS_ACCOUNT_ID secret)
+- [x] Publish static site to GitHub Pages, injecting Function URL (mock mode until BACKEND_URL set)
+- [x] docs/DEPLOYMENT.md: OIDC trust policy + starter least-privilege IAM policy for the deploy role
+- [!] Requires: AWS account, OIDC role, AWS_ACCOUNT_ID secret, Pages enabled (Tom)
 
 ## Stage 6 — End-to-end verify
 - [ ] Live vote/reload/lock, inspect DynamoDB, day rollover, a11y checks

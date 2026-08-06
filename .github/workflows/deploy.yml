@@ -1,0 +1,111 @@
+name: deploy
+
+# Continuous delivery for Current Mood.
+#
+#  * frontend  — always runs; publishes the static site to GitHub Pages. Injects
+#                the backend URL from the BACKEND_URL repo variable at build time.
+#                While that variable is empty the site ships in "mock mode".
+#  * backend   — runs only once AWS is wired up (the AWS_ACCOUNT_ID secret exists).
+#                Assumes an IAM role via OIDC and runs `sam build && sam deploy`.
+#
+# Setup required before the backend job does anything (see docs/DEPLOYMENT.md):
+#   Secrets:   AWS_ACCOUNT_ID            (12-digit account id)
+#              AWS_DEPLOY_ROLE_ARN       (optional — full role ARN; overrides the
+#                                         name-based default below)
+#   Variables: AWS_REGION               (optional, default ap-southeast-2)
+#              AWS_DEPLOY_ROLE_NAME      (optional, default current-mood-github-deploy)
+#              BACKEND_URL              (set to the Function URL after first deploy)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write # OIDC for both AWS auth and Pages
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Decide whether the backend can deploy yet (AWS_ACCOUNT_ID secret present).
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_backend: ${{ steps.c.outputs.deploy_backend }}
+    steps:
+      - id: c
+        run: echo "deploy_backend=${{ secrets.AWS_ACCOUNT_ID != '' }}" >> "$GITHUB_OUTPUT"
+
+  backend:
+    needs: config
+    if: needs.config.outputs.deploy_backend == 'true'
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
+      STACK_NAME: current-mood
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN != '' && secrets.AWS_DEPLOY_ROLE_ARN || format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, vars.AWS_DEPLOY_ROLE_NAME || 'current-mood-github-deploy') }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: sam build
+        working-directory: backend
+        run: sam build
+
+      - name: sam deploy
+        working-directory: backend
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --region "$AWS_REGION"
+
+      - name: Report Function URL
+        working-directory: backend
+        run: |
+          URL=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" --region "$AWS_REGION" \
+            --query "Stacks[0].Outputs[?OutputKey=='FunctionUrl'].OutputValue" \
+            --output text)
+          {
+            echo "### ✅ Backend deployed"
+            echo ""
+            echo "**Function URL:** \`$URL\`"
+            echo ""
+            echo "Set the repo **variable** \`BACKEND_URL\` to this value to wire the live frontend (until then it runs in mock mode)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  frontend:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject backend URL (empty = mock mode)
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          if [ -n "$BACKEND_URL" ]; then
+            echo "Injecting BACKEND_URL — live mode"
+          else
+            echo "BACKEND_URL not set — shipping in mock mode"
+          fi
+          # Replace the placeholder token; an empty value leaves the app in mock mode.
+          sed -i "s|__BACKEND_URL__|${BACKEND_URL}|g" frontend/js/config.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend
+      - id: deploy
+        uses: actions/deploy-pages@v4
