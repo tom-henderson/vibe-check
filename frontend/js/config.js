@@ -1,16 +1,26 @@
 // config.js — single source of truth the rest of the app reads.
 
 // The five moods. IDs m1–m5 are the stable contract with the backend and stored
-// data: never reorder or renumber them. Images can change freely — swap the
-// files in img/ (keeping the names) or point `src` somewhere else.
-// `color` mirrors the mockup palette and is used for bars/accents in the tally.
+// data: never reorder or renumber them.
+//
+// Images are resolved by ID, not named here: the app looks for `img/<id>.<ext>`,
+// trying MOOD_IMAGE_EXTENSIONS in order (see js/images.js). So to change a mood
+// you just drop a file at `img/m3.png` (or .jpg/.gif/.svg) — no edit here. See
+// docs/IMAGES.md. `color` mirrors the mockup palette and backs the tally
+// bars/chips (and shows through transparent images); `tilt` is the resting
+// rotation of the pick tile.
 export const MOODS = [
-  { id: "m1", src: "img/m1.svg", color: "#ff8fb1", tilt: -4 },
-  { id: "m2", src: "img/m2.svg", color: "#ffca70", tilt: 3 },
-  { id: "m3", src: "img/m3.svg", color: "#8ee39a", tilt: -2 },
-  { id: "m4", src: "img/m4.svg", color: "#7ec8ff", tilt: 4 },
-  { id: "m5", src: "img/m5.svg", color: "#c69bff", tilt: -3 },
+  { id: "m1", color: "#ff8fb1", tilt: -4 },
+  { id: "m2", color: "#ffca70", tilt: 3 },
+  { id: "m3", color: "#8ee39a", tilt: -2 },
+  { id: "m4", color: "#7ec8ff", tilt: 4 },
+  { id: "m5", color: "#c69bff", tilt: -3 },
 ];
+
+// Image formats tried per mood, in order. Raster formats come first so a real
+// uploaded image wins over any leftover placeholder; the first file that loads
+// is used. Extend this list to allow more types.
+export const MOOD_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
 
 // Build-time placeholder. The GitHub Pages workflow replaces the token below
 // with the real Lambda Function URL from the `BACKEND_URL` repo variable.

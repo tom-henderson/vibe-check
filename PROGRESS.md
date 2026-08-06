@@ -8,7 +8,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 ## Stage 1 — Static frontend, mocked data  ✅ done, verified in browser
 - [x] Lift mockup into real page; remove preview toolbar
 - [x] MOODS config (single source of truth for the five images)
-- [x] Placeholder mood images (SVG) — Tom swaps for real art later
+- [x] Placeholder mood images (PNG) + ID-based, format-agnostic resolver (png/jpg/gif/svg/webp) — drop-in swap, see docs/IMAGES.md
 - [x] Pick screen with vote flow
 - [x] Result screen (winner large, ranked tally, footer, "you picked X")
 - [x] Tie screen (multiple rank-1 winners)

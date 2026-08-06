@@ -5,6 +5,7 @@
 import { MOODS } from "./config.js";
 import { getState, vote } from "./api.js";
 import { nextNzMidnight } from "./time.js";
+import { createMoodImage } from "./images.js";
 
 const MOOD_BY_ID = Object.fromEntries(MOODS.map((m) => [m.id, m]));
 const COOKIE = "mood_vote";
@@ -52,7 +53,11 @@ function buildPick() {
     btn.type = "button";
     btn.setAttribute("aria-label", "pick this mood");
     btn.style.setProperty("--tilt", `${mood.tilt}deg`);
-    btn.innerHTML = `<div class="swatch" style="background:${mood.color}"><img src="${mood.src}" alt="" draggable="false"></div>`;
+    const swatch = document.createElement("div");
+    swatch.className = "swatch";
+    swatch.style.background = mood.color;
+    swatch.appendChild(createMoodImage(mood.id));
+    btn.appendChild(swatch);
     btn.addEventListener("click", () => castVote(mood.id));
     grid.appendChild(btn);
   }
@@ -101,7 +106,7 @@ function renderResult(state, yourMood) {
     const el = document.createElement("div");
     el.className = "winner" + (tie ? " tie" : "");
     el.style.background = m.color;
-    el.innerHTML = `<img src="${m.src}" alt="" draggable="false">`;
+    el.appendChild(createMoodImage(id));
     wrap.appendChild(el);
   }
 
@@ -130,13 +135,32 @@ function renderResult(state, yourMood) {
     const n = counts[m.id] || 0;
     const rank = 1 + MOODS.filter((o) => (counts[o.id] || 0) > n).length;
     const width = total ? (n / max) * 100 : 0;
+
     const row = document.createElement("div");
     row.className = "row";
-    row.innerHTML =
-      `<span class="rank">${rank}</span>` +
-      `<div class="chip" style="background:${m.color}"><img src="${m.src}" alt="" draggable="false"></div>` +
-      `<div class="bar-track"><div class="bar" style="width:${width}%;background:${m.color}"></div></div>` +
-      `<span class="num">${n}</span>`;
+
+    const rankEl = document.createElement("span");
+    rankEl.className = "rank";
+    rankEl.textContent = rank;
+
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.style.background = m.color;
+    chip.appendChild(createMoodImage(m.id));
+
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.width = `${width}%`;
+    bar.style.background = m.color;
+    track.appendChild(bar);
+
+    const num = document.createElement("span");
+    num.className = "num";
+    num.textContent = n;
+
+    row.append(rankEl, chip, track, num);
     tallyEl.appendChild(row);
   });
 

@@ -30,10 +30,10 @@ the result screen until the next NZ midnight. Clear site data to vote again.
 
 ## Swapping the mood images
 
-Placeholders live in `frontend/img/m1.svg … m5.svg`. Replace the files (keeping
-the names) or edit the `MOODS` array in `frontend/js/config.js`. IDs `m1`–`m5`
-are a fixed contract — never reorder or renumber them; the image behind an ID
-can change freely.
+Drop a file at `frontend/img/m1.png` … `m5.png` — or `.jpg`, `.gif`, `.svg`. The
+app resolves each mood by ID across formats, so no code edit is needed; one file
+per mood. IDs `m1`–`m5` are a fixed contract (never reorder or renumber), but the
+image behind an ID can change freely. Full guide: **`docs/IMAGES.md`**.
 
 ## Handoff points (Tom)
 
