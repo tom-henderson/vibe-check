@@ -8,13 +8,13 @@ name: deploy
 #  * backend   — runs only once AWS is wired up (the AWS_ACCOUNT_ID secret exists).
 #                Assumes an IAM role via OIDC and runs `sam build && sam deploy`.
 #
-# Setup required before the backend job does anything (see docs/DEPLOYMENT.md):
-#   Secrets:   AWS_ACCOUNT_ID            (12-digit account id)
-#              AWS_DEPLOY_ROLE_ARN       (optional — full role ARN; overrides the
-#                                         name-based default below)
-#   Variables: AWS_REGION               (optional, default ap-southeast-2)
-#              AWS_DEPLOY_ROLE_NAME      (optional, default current-mood-github-deploy)
-#              BACKEND_URL              (set to the Function URL after first deploy)
+# Setup required before the backend job does anything (see docs/DEPLOYMENT.md).
+# Each may live under the Secrets or the Variables tab — the workflow reads both:
+#   AWS_ACCOUNT_ID              12-digit account id (as a secret, gates the backend job)
+#   AWS_SAM_DEPLOY_ROLE_NAME    name of the IAM role the workflow assumes via OIDC
+#   AWS_SAM_DEPLOY_BUCKET_NAME  pre-created S3 bucket for SAM upload artifacts
+#   AWS_REGION                  optional, default ap-southeast-2
+#   BACKEND_URL                 set to the Function URL after the first deploy
 
 on:
   push:
@@ -47,13 +47,18 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
       STACK_NAME: current-mood
+      # Role name and artifact bucket are provided by Tom. They may live under
+      # either the Variables or Secrets tab; concatenation yields whichever is
+      # set (the other side is an empty string).
+      DEPLOY_ROLE_NAME: ${{ vars.AWS_SAM_DEPLOY_ROLE_NAME }}${{ secrets.AWS_SAM_DEPLOY_ROLE_NAME }}
+      DEPLOY_BUCKET: ${{ vars.AWS_SAM_DEPLOY_BUCKET_NAME }}${{ secrets.AWS_SAM_DEPLOY_BUCKET_NAME }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN != '' && secrets.AWS_DEPLOY_ROLE_ARN || format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, vars.AWS_DEPLOY_ROLE_NAME || 'current-mood-github-deploy') }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.DEPLOY_ROLE_NAME }}
           aws-region: ${{ env.AWS_REGION }}
 
       - uses: aws-actions/setup-sam@v2
@@ -66,7 +71,9 @@ jobs:
 
       - name: sam deploy
         working-directory: backend
-        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --region "$AWS_REGION"
+        run: >-
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+          --region "$AWS_REGION" --s3-bucket "$DEPLOY_BUCKET"
 
       - name: Report Function URL
         working-directory: backend

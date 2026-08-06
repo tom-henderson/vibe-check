@@ -24,9 +24,9 @@ workflow assumes. No long-lived AWS keys are stored in GitHub.
 - Provider URL: `https://token.actions.githubusercontent.com`
 - Audience: `sts.amazonaws.com`
 
-**Role** — default name `current-mood-github-deploy` (override with the
-`AWS_DEPLOY_ROLE_NAME` variable, or supply the full ARN as the
-`AWS_DEPLOY_ROLE_ARN` secret).
+**Role** — its name is supplied via `AWS_SAM_DEPLOY_ROLE_NAME` (variable or
+secret). The workflow builds the ARN as
+`arn:aws:iam::<AWS_ACCOUNT_ID>:role/<AWS_SAM_DEPLOY_ROLE_NAME>`.
 
 Trust policy (locks the role to this repo's `main`):
 ```json
@@ -67,13 +67,12 @@ something is missing, so extend from there. `<REGION>` defaults to
       "Resource": "*"
     },
     {
-      "Sid": "SamManagedBucket",
+      "Sid": "SamArtifactBucket",
       "Effect": "Allow",
-      "Action": ["s3:CreateBucket", "s3:PutBucketPolicy", "s3:PutBucketTagging",
-        "s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket",
-        "s3:GetBucketLocation", "s3:PutEncryptionConfiguration",
-        "s3:PutBucketVersioning", "s3:PutBucketPublicAccessBlock"],
-      "Resource": ["arn:aws:s3:::aws-sam-cli-managed-*", "arn:aws:s3:::aws-sam-cli-managed-*/*"]
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject",
+        "s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": ["arn:aws:s3:::<AWS_SAM_DEPLOY_BUCKET_NAME>",
+        "arn:aws:s3:::<AWS_SAM_DEPLOY_BUCKET_NAME>/*"]
     },
     {
       "Sid": "LambdaAndUrl",
@@ -108,10 +107,13 @@ something is missing, so extend from there. `<REGION>` defaults to
 }
 ```
 
-### 3. Add the secret
-Settings → Secrets and variables → Actions → **Secrets**:
-- `AWS_ACCOUNT_ID` — your 12-digit account id. *(Presence of this flips the
-  backend job on.)*
+### 3. Add the secrets / variables
+Settings → Secrets and variables → Actions. These may go under either the
+**Secrets** or **Variables** tab — the workflow reads both:
+- `AWS_ACCOUNT_ID` — 12-digit account id. *(Presence of this as a **secret**
+  flips the backend job on.)*
+- `AWS_SAM_DEPLOY_ROLE_NAME` — name of the IAM role the workflow assumes.
+- `AWS_SAM_DEPLOY_BUCKET_NAME` — pre-created S3 bucket for SAM upload artifacts.
 
 ### 4. After the first successful backend deploy
 The deploy job's summary prints the **Function URL**. Add it under **Variables**:
@@ -124,7 +126,6 @@ code change.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `AWS_REGION` | `ap-southeast-2` | Region for the SAM stack |
-| `AWS_DEPLOY_ROLE_NAME` | `current-mood-github-deploy` | Role name (if you didn't set `AWS_DEPLOY_ROLE_ARN`) |
 | `BACKEND_URL` | *(empty → mock mode)* | Lambda Function URL for the live frontend |
 
 ## CORS note
