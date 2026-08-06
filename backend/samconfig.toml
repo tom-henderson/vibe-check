@@ -1,11 +1,10 @@
 version = 0.1
 
-# Non-secret deploy defaults shared by local runs and CI. Region and the AWS
-# credentials come from the environment (the workflow sets them), so they are
-# intentionally not pinned here.
+# Non-secret deploy defaults shared by local runs and CI. Region, credentials,
+# and the artifact S3 bucket (--s3-bucket) come from the environment / workflow,
+# so they are intentionally not pinned here.
 [default.deploy.parameters]
 stack_name = "current-mood"
-resolve_s3 = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = false
 fail_on_empty_changeset = false
