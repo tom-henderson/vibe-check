@@ -18,18 +18,19 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 - [x] Responsive to mobile — verified at 390px
 - [x] Respect prefers-reduced-motion; keyboard-focusable tiles
 
-## Stage 2 — SAM scaffold + DynamoDB table
-- [ ] `template.yaml` with DynamoDB table (on-demand, PK `dayKey`, no TTL)
-- [ ] Function env var for table name + least-privilege access
+## Stage 2 — SAM scaffold + DynamoDB table  ✅ written (deploy pending AWS)
+- [x] `template.yaml` with DynamoDB table (on-demand, PK `dayKey`, no TTL)
+- [x] Function env var for table name + least-privilege access (GetItem+UpdateItem on the one table)
 
-## Stage 3 — Lambda + Function URL
-- [ ] Handler: NZ dayKey (DST-correct), GET state, POST vote (atomic ADD + upsert)
-- [ ] Mood validation, response shape per §6
-- [ ] Function URL + CORS locked to Pages origin
+## Stage 3 — Lambda + Function URL  ✅ written & unit-tested (deploy pending AWS)
+- [x] Handler: NZ dayKey (DST-correct), GET state, POST vote (atomic ADD + upsert)
+- [x] Mood validation, response shape per §6
+- [x] Function URL + CORS locked to Pages origin
+- [x] 19 unit checks against a mocked DynamoDB (GET/POST/tie/validation) — all pass
 
-## Stage 4 — Wire frontend to API
-- [ ] Replace mock with real fetch calls (build-time injected URL)
-- [ ] Cookie (`mood|dayKey`, expiry at next NZ midnight) + already-voted path
+## Stage 4 — Wire frontend to API  ✅ code-complete (activates when BACKEND_URL is set)
+- [x] Real fetch calls implemented behind the api seam (build-time injected URL)
+- [x] Cookie (`mood|dayKey`, expiry at next NZ midnight) + already-voted path
 
 ## Stage 5 — CI/CD via GitHub Actions
 - [ ] Workflow: OIDC auth to AWS, `sam build && sam deploy`

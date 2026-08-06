@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-09
+Description: >
+  Current Mood backend — one Lambda behind a Function URL, backed by a single
+  DynamoDB table (one item per NZ day holding that day's five counters).
+
+Parameters:
+  AllowOrigin:
+    Type: String
+    Default: https://tom-henderson.github.io
+    Description: >
+      Exact origin (scheme+host, no path/trailing slash) allowed by CORS.
+      This is the GitHub Pages site the frontend is served from.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    MemorySize: 128
+    Timeout: 5
+    Architectures:
+      - arm64
+
+Resources:
+  MoodTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      # One item per day; PAY_PER_REQUEST suits ultra-low, spiky traffic.
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: dayKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: dayKey
+          KeyType: HASH
+      # No TTL: past days are retained as history (never surfaced).
+
+  MoodFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MoodTable
+      # Least privilege: only read + increment on this one table.
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt MoodTable.Arn
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - !Ref AllowOrigin
+          AllowMethods:
+            - GET
+            - POST
+          AllowHeaders:
+            - content-type
+          MaxAge: 300
+
+Outputs:
+  FunctionUrl:
+    Description: Public Lambda Function URL — set this as the repo variable BACKEND_URL.
+    Value: !GetAtt MoodFunctionUrl.FunctionUrl
+  TableName:
+    Description: DynamoDB table name.
+    Value: !Ref MoodTable

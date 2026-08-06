@@ -1,0 +1,11 @@
+{
+  "name": "current-mood-backend",
+  "version": "1.0.0",
+  "description": "Lambda handler for Current Mood",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0"
+  }
+}
