@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Pick today's mood. One vote a day, wipes at midnight.">
+<title>current mood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,400;0,600;0,800;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- Loading -->
+  <section id="loading" class="screen show" aria-live="polite">
+    <p class="loading-msg">reading the room…</p>
+  </section>
+
+  <!-- Pick -->
+  <section id="pick" class="screen">
+    <h1>what's the <span class="wave">mood</span>?</h1>
+    <div class="moods" id="moods"></div>
+    <p id="vote-error" class="vote-error" role="alert">that didn't go through — try again</p>
+  </section>
+
+  <!-- Result / Tie (data-driven; a tie renders multiple rank-1 winners) -->
+  <section id="result" class="screen">
+    <div class="verdict">
+      <div class="kicker">current mood:</div>
+      <div class="winner-wrap" id="winner-wrap"></div>
+      <div class="yours" id="yours"></div>
+    </div>
+    <div class="tally">
+      <div class="tally-rows" id="tally-rows"></div>
+    </div>
+    <p class="foot" id="foot"></p>
+  </section>
+
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
