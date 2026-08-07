@@ -34,15 +34,14 @@ Companion to `DECISIONS.md` (why) and `HANDOVER.md` (the build spec).
 
 ## Security (see `docs/SECURITY-REVIEW.md`)
 Applied: Actions pinned to SHAs + Dependabot; per-job workflow permissions;
-deploys guarded to `main`; CSP meta; `Secure` cookie. Reserved-concurrency cap
-**deferred** — the account's Lambda concurrency (~10) is below AWS's 10-unreserved
-floor, so it's the de-facto cap for now (restore after a quota increase).
+deploys guarded to `main`; CSP meta; `Secure` cookie; **branch protection on
+`main`**. No reserved-concurrency cap — the account's ~10 concurrency quota is
+already the ceiling, so a cap adds nothing unless the quota is later raised.
 
 Open owner-side (optional, non-blocking):
-- [ ] Branch protection on `main` (primary control — merge = deploy)
-- [ ] Deploy-role least-privilege review; AWS Budgets alert
+- [ ] Deploy-role least-privilege review
+- [ ] AWS Budgets alert (the real cost guard)
 - [ ] Pages environment protection limited to `main`
-- [ ] Raise Lambda "Concurrent executions" quota, then re-add a reserved cap
 
 ## Deploy log (condensed)
 - **run #1–2** — OIDC role name, then the role's **trust policy** (owner fixed).
