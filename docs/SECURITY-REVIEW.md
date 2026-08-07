@@ -182,7 +182,10 @@ maintainer-controlled.
 ## Prioritized remediation checklist
 
 **Repo-side (applied 2026-08-06):**
-- [x] A1 — `ReservedConcurrentExecutions: 10` on the function (adjustable).
+- [~] A1 — reserved-concurrency cap **removed**: the account's Lambda concurrency
+      limit (~10) is below AWS's required 10-unreserved floor, so any reservation
+      is rejected. That low limit is the de-facto cap for now; re-add the cap after
+      raising the "Concurrent executions" quota (Service Quotas → Lambda) above ~20.
 - [x] B1 — all Actions pinned to commit SHAs; Dependabot added (actions + npm).
 - [x] B2 — `id-token`/`pages` moved to per-job `permissions`; default is `contents: read`.
 - [x] B3 — `frontend` (and `backend`) jobs guarded to `refs/heads/main`.
