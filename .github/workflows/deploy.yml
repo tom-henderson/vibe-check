@@ -21,10 +21,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Minimal default for every job; jobs opt into more below (least privilege).
 permissions:
   contents: read
-  pages: write
-  id-token: write # OIDC for both AWS auth and Pages
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -42,8 +41,13 @@ jobs:
 
   backend:
     needs: config
-    if: needs.config.outputs.deploy_backend == 'true'
+    # Deploy only from main; the OIDC trust also only allows main, this is
+    # defence in depth so a non-main dispatch doesn't even try.
+    if: github.ref == 'refs/heads/main' && needs.config.outputs.deploy_backend == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC → AWS
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
       STACK_NAME: current-mood
@@ -53,15 +57,15 @@ jobs:
       DEPLOY_ROLE_NAME: ${{ vars.AWS_SAM_DEPLOY_ROLE_NAME }}${{ secrets.AWS_SAM_DEPLOY_ROLE_NAME }}
       DEPLOY_BUCKET: ${{ vars.AWS_SAM_DEPLOY_BUCKET_NAME }}${{ secrets.AWS_SAM_DEPLOY_BUCKET_NAME }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.DEPLOY_ROLE_NAME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - uses: aws-actions/setup-sam@v2
+      - uses: aws-actions/setup-sam@f84ec7d548307efafe33230528756de3c5841a17 # v2
         with:
           use-installer: true
 
@@ -91,12 +95,19 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
+    # Publish only from main so a workflow_dispatch on another branch can't push
+    # unreviewed content to the live Pages site.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write # publish to Pages
+      id-token: write # Pages deployment attestation
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Inject backend URL (empty = mock mode)
         env:
@@ -110,9 +121,9 @@ jobs:
           # Replace the placeholder token; an empty value leaves the app in mock mode.
           sed -i "s|__BACKEND_URL__|${BACKEND_URL}|g" frontend/js/config.js
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: frontend
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -44,68 +44,23 @@ Trust policy (locks the role to this repo's `main`):
 }
 ```
 
-**Permissions policy** — a starting point for what `sam deploy` needs. It is
-intentionally minimal; the deploy job prints the exact `AccessDenied` action if
-something is missing, so extend from there. `<REGION>` defaults to
-`ap-southeast-2`.
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "Cloudformation",
-      "Effect": "Allow",
-      "Action": [
-        "cloudformation:CreateStack", "cloudformation:UpdateStack",
-        "cloudformation:DeleteStack", "cloudformation:DescribeStacks",
-        "cloudformation:DescribeStackEvents", "cloudformation:DescribeStackResource",
-        "cloudformation:DescribeStackResources", "cloudformation:GetTemplate",
-        "cloudformation:GetTemplateSummary", "cloudformation:CreateChangeSet",
-        "cloudformation:DescribeChangeSet", "cloudformation:ExecuteChangeSet",
-        "cloudformation:DeleteChangeSet", "cloudformation:ListStackResources"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "SamArtifactBucket",
-      "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject",
-        "s3:ListBucket", "s3:GetBucketLocation"],
-      "Resource": ["arn:aws:s3:::<AWS_SAM_DEPLOY_BUCKET_NAME>",
-        "arn:aws:s3:::<AWS_SAM_DEPLOY_BUCKET_NAME>/*"]
-    },
-    {
-      "Sid": "LambdaAndUrl",
-      "Effect": "Allow",
-      "Action": ["lambda:CreateFunction", "lambda:UpdateFunctionCode",
-        "lambda:UpdateFunctionConfiguration", "lambda:GetFunction",
-        "lambda:DeleteFunction", "lambda:TagResource", "lambda:ListTags",
-        "lambda:CreateFunctionUrlConfig", "lambda:UpdateFunctionUrlConfig",
-        "lambda:GetFunctionUrlConfig", "lambda:DeleteFunctionUrlConfig",
-        "lambda:AddPermission", "lambda:RemovePermission", "lambda:GetPolicy"],
-      "Resource": "arn:aws:lambda:*:<ACCOUNT_ID>:function:current-mood*"
-    },
-    {
-      "Sid": "DynamoDB",
-      "Effect": "Allow",
-      "Action": ["dynamodb:CreateTable", "dynamodb:DescribeTable",
-        "dynamodb:UpdateTable", "dynamodb:DeleteTable", "dynamodb:TagResource",
-        "dynamodb:ListTagsOfResource", "dynamodb:DescribeContinuousBackups",
-        "dynamodb:DescribeTimeToLive"],
-      "Resource": "arn:aws:dynamodb:*:<ACCOUNT_ID>:table/current-mood*"
-    },
-    {
-      "Sid": "ExecutionRole",
-      "Effect": "Allow",
-      "Action": ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole",
-        "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
-        "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:TagRole",
-        "iam:PassRole"],
-      "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/current-mood*"
-    }
-  ]
-}
-```
+**Permissions policy.** Tom manages the deploy role's policy directly. Against
+that policy, `sam deploy` for this stack needs, beyond CloudFormation/S3/Lambda
+(already granted):
+
+- **DynamoDB table management** — the one gap. Minimal actions to create/update
+  the on-demand table (no TTL/PITR/autoscaling), scoped to `table/current-mood*`:
+  `CreateTable`, `DeleteTable`, `DescribeTable`, `UpdateTable`,
+  `DescribeTimeToLive`, `DescribeContinuousBackups`, `ListTagsOfResource`,
+  `TagResource`, `UntagResource`.
+- **IAM for the execution role** — no addition needed. The function's execution
+  role is defined at `Path: /service-role/` in `template.yaml`, so it falls
+  under the existing `iam:*` / `iam:PassRole` grant scoped to
+  `role/service-role/*`. (SAM's default auto-generated role sits at path `/` and
+  would be denied — hence the explicit role.)
+
+The deploy job prints the exact `AccessDenied` action if anything else surfaces,
+so extend from there.
 
 ### 3. Add the secrets / variables
 Settings → Secrets and variables → Actions. These may go under either the

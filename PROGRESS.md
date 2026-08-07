@@ -8,7 +8,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 ## Stage 1 — Static frontend, mocked data  ✅ done, verified in browser
 - [x] Lift mockup into real page; remove preview toolbar
 - [x] MOODS config (single source of truth for the five images)
-- [x] Placeholder mood images (SVG) — Tom swaps for real art later
+- [x] Placeholder mood images (PNG) + ID-based, format-agnostic resolver (png/jpg/gif/svg/webp) — drop-in swap, see docs/IMAGES.md
 - [x] Pick screen with vote flow
 - [x] Result screen (winner large, ranked tally, footer, "you picked X")
 - [x] Tie screen (multiple rank-1 winners)
@@ -42,8 +42,38 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` pending · `[!]` blocked (needs
 - [ ] Live vote/reload/lock, inspect DynamoDB, day rollover, a11y checks
 
 ## Waiting on Tom (see README "Handoff points")
-- [ ] Provision AWS account + OIDC for deploy
-- [ ] Add AWS account ID to Actions secrets
-- [ ] Create the IAM deploy role I assume
+- [x] Provision AWS account + OIDC for deploy
+- [x] Add AWS account ID to Actions secrets
+- [x] Create the IAM deploy role I assume (name in AWS_SAM_DEPLOY_ROLE_NAME)
+- [x] Enable GitHub Pages (source: GitHub Actions)
+- [ ] Merge PR #2 (CI fix so backend assumes the right role)
+- [ ] After first backend deploy: set BACKEND_URL repo variable
 - [ ] Replace placeholder mood images
-- [ ] Enable GitHub Pages (source: GitHub Actions) — confirm
+
+## Security
+- Review in `docs/SECURITY-REVIEW.md`. Repo-side hardening applied: reserved
+  concurrency cap (10), Actions pinned to SHAs + Dependabot, per-job workflow
+  permissions, deploys guarded to main, CSP meta, Secure cookie.
+- Owner to-dos: branch protection on main (primary control), deploy-role
+  least-privilege review, AWS Budgets alert, Pages environment restricted to main.
+
+## Deploy log
+- **2026-08-06, run #1** (merge of PR #1, ran the pre-fix workflow):
+  - `config` ✅ backend gated on (AWS_ACCOUNT_ID present).
+  - `frontend` ✅ published to Pages in mock mode.
+  - `backend` ❌ `sts:AssumeRoleWithWebIdentity` not authorized — the merged
+    workflow used the old hardcoded role name `current-mood-github-deploy`.
+    Fix in **PR #2** (assume `AWS_SAM_DEPLOY_ROLE_NAME`, upload to
+    `AWS_SAM_DEPLOY_BUCKET_NAME`). Merge #2 → re-run should get past auth.
+    Watch for the next likely blocker: IAM permission scope on the deploy role.
+- **2026-08-06, run #2** (merge of PR #2, corrected workflow):
+  - `config` ✅, `frontend` ✅ (Pages, mock mode).
+  - `backend` ❌ still at OIDC step — role **name resolved** but trust policy
+    rejected the subject. Tom fixed the trust policy. (GitHub Actions outage
+    then paused further runs.)
+- **Pre-deploy policy audit** (against the granted deploy-role policy):
+  - Gap found: **no DynamoDB permissions** → CFN `CreateTable` would be denied.
+    Minimal DynamoDB policy handed to Tom (Terraform) to add.
+  - Gap found: SAM's auto role (path `/`) denied by the `role/service-role/*`
+    IAM scope → **template now pins the exec role to `/service-role/`** (PR #3),
+    no IAM change needed.
