@@ -87,7 +87,7 @@ async function castVote(moodId) {
   try {
     const state = await vote(moodId);
     writeVoteCookie(moodId, state.dayKey);
-    renderResult(state, moodId);
+    renderResult(state);
     show("result");
   } catch (err) {
     console.error(err);
@@ -97,7 +97,7 @@ async function castVote(moodId) {
 }
 
 // ------------------------------------------------------------------- result
-function renderResult(state, yourMood) {
+function renderResult(state) {
   const { counts, total, winners } = state;
 
   // Winner(s) shown large. A tie renders every rank-1 winner side by side.
@@ -111,19 +111,6 @@ function renderResult(state, yourMood) {
     el.style.background = m.color;
     el.appendChild(createMoodImage(id));
     wrap.appendChild(el);
-  }
-
-  // "you picked" echo.
-  const yoursEl = document.getElementById("yours");
-  if (yourMood && MOOD_BY_ID[yourMood]) {
-    const m = MOOD_BY_ID[yourMood];
-    const pickedWinner = winners.includes(yourMood);
-    yoursEl.innerHTML = `<span class="dot" style="background:${m.color}"></span>${
-      pickedWinner ? "that's what you picked too" : "you picked this one"
-    }`;
-    yoursEl.style.display = "";
-  } else {
-    yoursEl.style.display = "none";
   }
 
   // Ranked tally: sort by count desc; ties share a rank; bar width relative to
@@ -166,11 +153,6 @@ function renderResult(state, yourMood) {
     row.append(rankEl, chip, track, num);
     tallyEl.appendChild(row);
   });
-
-  const noun = total === 1 ? "vote" : "votes";
-  document.getElementById(
-    "foot"
-  ).textContent = `${total} ${noun} today · wipes at midnight`;
 }
 
 // ------------------------------------------------------------------- init
@@ -189,7 +171,7 @@ async function init() {
 
   const voted = readVoteCookie();
   if (voted && voted.dayKey === state.dayKey) {
-    renderResult(state, voted.mood);
+    renderResult(state);
     show("result");
   } else {
     show("pick");
