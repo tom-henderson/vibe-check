@@ -1,49 +1,65 @@
 # Current Mood
 
 A one-page site where each visitor picks one of five "mood" images per day, then
-sees the current global winner and a ranked tally. Counts are per-day and reset
-at midnight **Pacific/Auckland**; each day's totals are kept as their own record.
+sees the current global winner and a ranked tally.
 
-- **Frontend** — static page (`frontend/`), published to GitHub Pages.
-- **Backend** — one AWS Lambda behind a Function URL + a DynamoDB table, defined
-  with AWS SAM (`backend/`). Not deployed yet.
-- **Spec** — `HANDOVER.md`. Progress — `PROGRESS.md`. Decisions — `DECISIONS.md`.
+**Live:** https://tom-henderson.github.io/vibe-check/
 
-## Fake-until-real
+## What it does
 
-The frontend works with **no backend**. `frontend/js/config.js` carries a
-`BACKEND_URL` build-time placeholder; while it's unset the app runs in **mock
-mode** — it fakes today's counts, accepts a vote locally, and shows the
-result/tie screens. The moment a real URL is injected it uses the live API
-instead, with no other code change (`frontend/js/api.js`).
+- **Pick** — five mood tiles; one tap casts a vote and shows the result.
+- **Result** — the winning image large, then a ranked tally of all five (image +
+  bar + raw count, highest first). A **tie** shows every rank-1 winner together.
+- **One vote per day** — best-effort, via a cookie scoped to today; a returning
+  visitor goes straight to the result until the next reset.
+- **Daily reset** — counts are per **NZ day** (`Pacific/Auckland`), computed
+  server-side, and reset at local midnight. Past days' totals are retained in the
+  table but never shown.
+- **All states handled** — loading, pick, result, tie, and vote-failed (keeps the
+  visitor on the pick screen with an inline retry).
+- **Responsive** — scales up on wide screens, down on small ones; respects
+  `prefers-reduced-motion`; tiles are keyboard-focusable.
+- **Swappable images** — drop a file at `frontend/img/m1.png` … `m5.png` (or
+  `.jpg`/`.gif`/`.svg`); resolved by ID, no code change. See `docs/IMAGES.md`.
 
-## Run it locally
+## How it's built
 
-```bash
-cd frontend
-python3 -m http.server 8099
-# open http://localhost:8099
+- **Frontend** (`frontend/`) — static HTML/CSS/JS, no framework, served from
+  **GitHub Pages**.
+- **Backend** (`backend/`) — one **AWS Lambda** behind a **Function URL**, backed
+  by a single **DynamoDB** table (one item per day, atomic increments), defined
+  with **AWS SAM**. Region `ap-southeast-2`.
+- **CI/CD** (`.github/workflows/deploy.yml`) — on push to `main`: `sam build &&
+  sam deploy` (AWS via OIDC, no stored keys) and publish the site to Pages.
+- **Fake-until-real** — the frontend calls the live API only when the
+  `BACKEND_URL` repo variable is set; otherwise it runs a self-contained **mock
+  mode** (fake counts + local voting) so the whole UX works with no backend.
+
+```
+[ GitHub Pages static page ] --fetch--> [ Lambda Function URL ] --> [ DynamoDB ]
 ```
 
-To exercise the returning-visitor path, vote and reload — a cookie keeps you on
-the result screen until the next NZ midnight. Clear site data to vote again.
+## Run locally
 
-## Swapping the mood images
+```bash
+cd frontend && python3 -m http.server 8099   # open http://localhost:8099
+```
 
-Drop a file at `frontend/img/m1.png` … `m5.png` — or `.jpg`, `.gif`, `.svg`. The
-app resolves each mood by ID across formats, so no code edit is needed; one file
-per mood. IDs `m1`–`m5` are a fixed contract (never reorder or renumber), but the
-image behind an ID can change freely. Full guide: **`docs/IMAGES.md`**.
+Runs in mock mode. Vote and reload to exercise the returning-visitor path.
 
-## Handoff points (Tom)
+Backend handler tests:
 
-These are outside the build and gate the later stages:
+```bash
+cd backend && npm install && npm test        # 19 checks against a mocked DynamoDB
+```
 
-1. Provision the AWS account.
-2. Set up GitHub OIDC for deploy and add the AWS account ID to Actions secrets.
-3. Create the minimal IAM role this repo's workflow assumes (extended as needed;
-   the deploy workflow reports missing permissions).
-4. Once the backend is deployed, set the repo **variable** `BACKEND_URL` to the
-   Lambda Function URL — the Pages build injects it automatically.
-5. Enable GitHub Pages (Settings → Pages → Source: **GitHub Actions**).
-6. Replace the placeholder mood images with the real art.
+## Docs
+
+| Doc | What |
+| --- | --- |
+| `HANDOVER.md` | Original build spec |
+| `docs/DEPLOYMENT.md` | AWS + OIDC setup, deploy-role IAM, repo secrets/variables |
+| `docs/IMAGES.md` | Swapping the mood images |
+| `docs/SECURITY-REVIEW.md` | Security posture, applied hardening, owner to-dos |
+| `DECISIONS.md` | Why the notable choices were made |
+| `PROGRESS.md` | Build status + deploy log |

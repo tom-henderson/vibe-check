@@ -182,10 +182,12 @@ maintainer-controlled.
 ## Prioritized remediation checklist
 
 **Repo-side (applied 2026-08-06):**
-- [~] A1 — reserved-concurrency cap **removed**: the account's Lambda concurrency
-      limit (~10) is below AWS's required 10-unreserved floor, so any reservation
-      is rejected. That low limit is the de-facto cap for now; re-add the cap after
-      raising the "Concurrent executions" quota (Service Quotas → Lambda) above ~20.
+- [x] A1 — reserved-concurrency cap **removed, and not needed** while the account's
+      Lambda "Concurrent executions" quota (~10) is the de-facto ceiling. A reserve
+      of 10 can't be set anyway (below AWS's 10-unreserved floor), and it would only
+      bound *concurrency*, not throughput/cost. Only worth re-adding **if** the quota
+      is later raised for real scaling and you want a per-function ceiling; cost is
+      better guarded by a Budgets alert (below).
 - [x] B1 — all Actions pinned to commit SHAs; Dependabot added (actions + npm).
 - [x] B2 — `id-token`/`pages` moved to per-job `permissions`; default is `contents: read`.
 - [x] B3 — `frontend` (and `backend`) jobs guarded to `refs/heads/main`.
@@ -193,12 +195,13 @@ maintainer-controlled.
 - [x] D2 — `Secure` added to the vote cookie (over HTTPS).
 
 **Account / GitHub settings (owner):**
-- [ ] C1 — **branch protection on `main`** (required review, no direct push) — the
-      primary control against a compromised-`main` deploy. Highest priority.
+- [x] C1 — **branch protection on `main`** enabled (the primary control against a
+      compromised-`main` deploy, since merge = deploy).
 - [ ] C1 — deploy-role least-privilege review; if delegating IAM, enforce a
       permissions boundary via an `iam:PermissionsBoundary` condition on the
       *deploy role* (not the template) and keep `service-role/*` free of
       privileged roles.
-- [ ] A1 — AWS Budgets alert; consider CloudFront (GET cache) / WAF if abused.
+- [ ] A1 — AWS Budgets alert (the real cost guard); consider CloudFront (GET cache)
+      / WAF only if abuse actually shows up.
 - [ ] B3 — `github-pages` environment protection rule limited to `main`.
 - [ ] D1 — (optional) self-host the two fonts to drop the third-party request.
