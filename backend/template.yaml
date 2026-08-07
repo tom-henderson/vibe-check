@@ -70,11 +70,12 @@ Resources:
       CodeUri: src/
       Handler: app.handler
       Role: !GetAtt MoodFunctionRole.Arn
-      # Cap concurrent invocations. The URL is public and unauthenticated, so
-      # this bounds both cost and the DynamoDB write rate under a flood (and
-      # contains blast radius). Trade-off: beyond this, callers are throttled and
-      # hit the app's "that didn't go through" path. Raise if real traffic needs it.
-      ReservedConcurrentExecutions: 10
+      # NOTE: a reserved-concurrency cap (for cost/DoS containment) is intentionally
+      # not set. This account's Lambda concurrency limit is ~10, and AWS forces at
+      # least 10 to stay unreserved, so any reservation is rejected. The low account
+      # limit is itself the de-facto cap for now. To restore an explicit cap, raise
+      # the "Concurrent executions" quota (Service Quotas → Lambda) above ~20, then
+      # add `ReservedConcurrentExecutions` leaving >=10 unreserved.
       Environment:
         Variables:
           TABLE_NAME: !Ref MoodTable

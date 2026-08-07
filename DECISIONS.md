@@ -7,6 +7,21 @@ Using two version-controlled Markdown files instead of an external tracker:
 `PROGRESS.md` (checklist/status) and `DECISIONS.md` (this file). Self-contained,
 reviewable in the diff, no extra tooling — best fit for "minimal interaction".
 
+## 2026-08-07 — SAM transform must be AWS::Serverless-2016-10-31 here
+In this locked-down account, `Transform: AWS::Serverless-2016-10-09` (the value
+the SAM CLI emits) was denied at `cloudformation:CreateChangeSet` on the macro
+`transform/Serverless-2016-10-09`, even with a matching identity grant. Switching
+to `AWS::Serverless-2016-10-31` (the value the CloudFormation template-reference
+docs specify) cleared it — CloudFormation handles that transform without the
+macro-invoke authorization that blocked `-09`. Keep `-31`.
+
+## 2026-08-07 — No reserved-concurrency cap (account limit too low)
+The security pass added `ReservedConcurrentExecutions: 10`, but the account's
+total Lambda concurrency is ~10 and AWS requires >=10 unreserved, so the create
+was rejected ("UnreservedConcurrentExecution below its minimum value of [10]").
+Removed it. The low account limit is the de-facto cap; restore an explicit one
+after raising the Lambda concurrency quota. See docs/SECURITY-REVIEW.md A1.
+
 ## 2026-08-06 — Lambda execution role pinned to /service-role/
 The deploy role's IAM permissions and its `iam:PassRole` condition are scoped to
 `arn:aws:iam::*:role/service-role/*`. SAM's auto-generated function role is
