@@ -57,7 +57,7 @@ jobs:
       DEPLOY_ROLE_NAME: ${{ vars.AWS_SAM_DEPLOY_ROLE_NAME }}${{ secrets.AWS_SAM_DEPLOY_ROLE_NAME }}
       DEPLOY_BUCKET: ${{ vars.AWS_SAM_DEPLOY_BUCKET_NAME }}${{ secrets.AWS_SAM_DEPLOY_BUCKET_NAME }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
@@ -107,7 +107,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Inject backend URL (empty = mock mode)
         env:
