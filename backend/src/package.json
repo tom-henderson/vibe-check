@@ -6,6 +6,6 @@
   "private": true,
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1136.0",
-    "@aws-sdk/lib-dynamodb": "^3.1132.0"
+    "@aws-sdk/lib-dynamodb": "^3.1137.0"
   }
 }
